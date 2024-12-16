@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def solve(path: Path) -> None:
-    text = path.read_text()
+    text = path.read_text().strip()
     solution_part_1 = 0
     solution_part_2 = 0
 
