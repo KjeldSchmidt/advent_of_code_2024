@@ -48,6 +48,7 @@ def solve_part_2(path: Path) -> None:
             print("Can't handle the stress of pushing from the right yet, sorry")
             pushing_items = [robot]
             while pushing_items != []:
+                pass
 
             raise NotImplementedError()
         else:
