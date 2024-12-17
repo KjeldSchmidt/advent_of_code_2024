@@ -25,55 +25,60 @@ def solve_part_2(path: Path) -> None:
 
     moves = "".join(moves.split("\n"))
 
-    grid_t: str = path.read_text().strip().split("\n\n")[0]
+    grid_t: str = grid_t.replace("#", "##")
+    grid_t: str = grid_t.replace("O", "[]")
+    grid_t: str = grid_t.replace(".", "..")
+    grid_t: str = grid_t.replace("@", "@.")
     grid = np.array([[block for block in line] for line in grid_t.split("\n")])
 
-    stretch = np.array([1, 2])
-    robot = (np.argwhere(grid == "@") * stretch)
-    walls = (np.argwhere(grid == "#") * stretch)
-    boxes = (np.argwhere(grid == "O") * stretch)
-    show_board_part_2(robot, walls, boxes)
+    show_board(grid)
 
     for move in moves:
-        print()
-        print()
-        print(move)
         d = directions[move]
-        if np.any((walls == robot+d).all(axis=1)):
-            print("No move, wall in the way, sorry")
-        elif np.any((boxes == robot+d).all(axis=1)):
-            print("Can't handle the stress of pushing from the left yet, sorry")
-            raise NotImplementedError()
-        elif np.any(((boxes + [0, 1]) == robot+d).all(axis=1)):
-            print("Can't handle the stress of pushing from the right yet, sorry")
-            pushing_items = [robot]
-            while pushing_items != []:
-                pass
 
-            raise NotImplementedError()
-        else:
-            print("Moving, bitches!")
-            robot += d
-        show_board_part_2(robot, walls, boxes)
+        r = np.argwhere(grid == "@").flatten()
+        pushing_items = [r]
+        pushed_items = []
 
+        chain_hits_wall = False
+        while pushing_items:
+            pushing_item = pushing_items.pop()
+            pushed_items.append((pushing_item, grid[*pushing_item]))
+            pushed_items_coordinates = [yx for yx, _ in pushed_items]
+            pushing_candidate = (pushing_item + d)
 
-def show_board_part_2(robot, walls, boxes):
-    width = np.max(walls)
-    height = width // 2
-    for y in range(height + 1):
-        for x in range(width + 2):
-            char_to_print = " "
-            if np.any(([y, x] == robot).all(axis=1)):
-                char_to_print = "@"
-            if np.any(([y, x] == walls).all(axis=1)) or np.any(([y, x-1] == walls).all(axis=1)):
-                char_to_print = "#"
-            if np.any(([y, x] == boxes).all(axis=1)):
-                char_to_print = "["
-            if np.any(([y, x-1] == boxes).all(axis=1)):
-                char_to_print = "]"
+            if grid[*pushing_candidate] == "#":
+                chain_hits_wall = True
+                break
 
-            print(char_to_print, end="")
-        print()
+            if grid[*pushing_candidate] == "[":
+                pushing_items.append(pushing_candidate)
+                right_side = pushing_candidate + [0, 1]
+                full_box_has_already_been_pushed = any(np.array_equal(right_side, v) for v in pushed_items_coordinates)
+                if not full_box_has_already_been_pushed:
+                    pushing_items.append(pushing_candidate + [0, 1])
+
+            if grid[*pushing_candidate] == "]":
+                pushing_items.append(pushing_candidate)
+                left_side = pushing_candidate + [0, -1]
+                full_box_has_already_been_pushed = any(np.array_equal(left_side, v) for v in pushed_items_coordinates)
+                if not full_box_has_already_been_pushed:
+                    pushing_items.append(pushing_candidate + [0, -1])
+
+        if chain_hits_wall:
+            continue
+
+        new_grid = grid.copy()
+
+        for coordinates, _ in pushed_items:
+            new_grid[*coordinates] = "."
+
+        for coordinates, thing in pushed_items:
+            new_grid[*(coordinates+d)] = thing
+
+        grid = new_grid
+
+    print(calc_score_part_2(grid))
 
 
 def make_all_moves_part_1(grid: np.ndarray, moves: str) -> None:
@@ -108,7 +113,15 @@ def calc_score_part_1(grid: np.ndarray) -> int:
     return score
 
 
-def show_board_part_1(grid: np.ndarray) -> None:
+def calc_score_part_2(grid: np.ndarray) -> int:
+    boxes = np.argwhere(grid == "[")
+    score = 0
+    for box in boxes:
+        score += 100*box[0] + box[1]
+    return score
+
+
+def show_board(grid: np.ndarray) -> None:
     height, width = grid.shape
     for y in range(height):
         for x in range(width):
@@ -120,5 +133,5 @@ def show_board_part_1(grid: np.ndarray) -> None:
 
 
 if __name__ == "__main__":
-    solve_part_1(Path("input-small.txt"))
-    solve_part_2(Path("input-small.txt"))
+    solve_part_1(Path("input.txt"))
+    solve_part_2(Path("input.txt"))
