@@ -1,0 +1,34 @@
+By only ever using direct moves without fiddling around corners, finding the "correct" sequence of presses on the keypad
+from the code becomes trivial.
+But then, the same is true for the D-Pad. The sequence-to-press for the keypad is simply the code for the D-Pad.
+
+
+To minimize downstream button presses, we want to:
+
+First go right/up, _then_ left/dow on the keypad, to avoid hitting the corner
+of nope in the bottom left.
+
+By similar reasoning, on the directional keypad, we want to go down first, left/right second, up last.
+    - HOWEVER, this might actually not be optimal. If the pointer on D-Pad is already on left, and we need to go
+    "down one, left one" on K-Pad, then going down first is highly suboptimal. We need to account for state _at least_
+    one step down the chain, probably more.
+    - Although I think that, by definition, a move on the lower layer will always be cheaper than adding an extra turn
+    on a higher layer. So it should be enough to change the move order _iff_ it is free. Still, this might hurt the
+    dream of going simulation-less. _Unless_ we state moves not as sequences of characters but rather as simple (x, y)
+    tuples and let the layer below figure out optimal moves for it. We'd essentially move the responsibility to not go
+    out of bounds into the lower layer. While this still implies a level of keeping state around, we'd at least be able
+    to consider this one layer at a time.
+
+The above approach should lead to crazy efficient caching.
+
+If the top D-Pad needs to move, these are the cases to consider:
+
+up, right, is on right: right > up
+up, right, is on up: up > right
+up, left,  is on up: up > left
+up, left,  is on left: SPECIAL CASE MAYBE
+
+down, right, is on right: up > right
+down, right, is on down: up > right
+up, left,  is on up: up > left
+up, left,  is on left: SPECIAL CASE MAYBE
